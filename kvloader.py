@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 # messing around with key/value tables in python/sql
 # copyright 2017 alec.muffett@gmail.com
 
@@ -19,7 +20,9 @@ cursor = None
 
 # TOKEN = [-\.\w]+
 # SEPARATOR = ?:[:;]|\s+
-RE_PARSE = re.compile( r'^\s*([-\.\w]+)(?:\+\w+)?@([-\.\w]+)(?:[:;]|\s+)([-\.\w!]*)$', re.I)
+RE_PARSE = re.compile(r'^\s*([-\.\w]+)(?:\+\w+)?@([-\.\w]+)(?:[:;]|\s+)([-\.\w!]*)$', re.I)
+RE_PARSE_UTF8 = re.compile(r'^\s*([-\.\w]+)(?:\+\w+)?@([-\.\w]+):([-\.\w!]*)$', re.U|re.I)
+RE_PARSE_COLONX = re.compile(r'^\s*([-\.\w]+)(?:\+\w+)?@([-\.\w]+)::+([-\.\w!]*)$', re.I)
 RE_PARSE_PMAIL = re.compile(r'^\s*(?:\+|%2b)?(\d+)@([-\.\w]+)(?:[:;]|\s+)([-\.\w!]*)$', re.I)
 RE_PARSE_LOOSE = re.compile(r'([0-9a-z][-\.\w]*)(?:\+\w+)?@([0-9a-z][-\.\w]*):([-\.\w!]+)', re.I)
 RE_PARSE_LOOSE2 = re.compile(r'([0-9a-z][-\.\w]*)(?:\+\w+)?@([0-9a-z][-\.\w]*):([-\.\w\'!"#$%&()*+,/;<=>?@^`|~]{1,12})', re.I)
@@ -129,6 +132,21 @@ def parse(line):
 	v = mo.group(3)
 	return k, v
 
+    mo = RE_PARSE_UTF8.match(line)
+    if mo:
+	k = mo.group(1).strip().lower()
+	k = '%s@%s' % (k, mo.group(2).strip().lower())
+	v = mo.group(3)
+	return k, v
+
+    mo = RE_PARSE_COLONX.match(line)
+    if mo:
+	k = mo.group(1).strip().lower()
+	k = '%s@%s' % (k, mo.group(2).strip().lower())
+	v = mo.group(3)
+	return k, v
+
+    # search
     mo = RE_PARSE_LOOSE.search(line)
     if mo:
 	k = mo.group(1).strip().lower()
@@ -176,17 +194,20 @@ def load_input(sid, input):
 	    line = line[0:max_len] # truncate stupidly long input
 	line = line.rstrip('\r\n')
 
+        # to unicode
+        line = unicode(line, 'utf-8', 'ignore')
+
 	# parse if possible
 	k, v = parse(line)
 	if k:
 	    if v: # skip blank V
 		buffer_add(sid, k, v)
 	else:
-	    print "reject:", line_no, line
+	    print 'reject:', line_no, line
 
 # load a file, switching on suffix
 def load_file(f):
-    print "file:", f
+    print 'file:', f
     buffer_init()
     sid = get_src_id(f)
     if f.endswith('.bz2'):
@@ -231,7 +252,7 @@ def lookup_run(what, with_source=False):
     SELECT DISTINCT %s
     FROM mappings m
     WHERE m.%s IN (
-        SELECT word FROM lookup
+	SELECT word FROM lookup
     );
     """ % (
 	','.join(cols),
@@ -244,6 +265,7 @@ def lookup_run(what, with_source=False):
 # ---- END LIBRARIES ----
 
 testvec = (
+    u'',
 )
 
 # user-facing functions
@@ -373,7 +395,7 @@ def usage(what = None):
 
 # init
 connection = sqlite3.connect(DB)
-connection.text_factory = lambda x: unicode(x, "utf-8", "ignore") # ignore bad unicode shit
+connection.text_factory = lambda x: unicode(x, 'utf-8', 'ignore') # ignore bad unicode shit
 cursor = connection.cursor()
 cursor.executescript(BOOTSTRAP)
 
