@@ -194,16 +194,14 @@ def load_input(sid, input):
 	    line = line[0:max_len] # truncate stupidly long input
 	line = line.rstrip('\r\n')
 
-        # to unicode
-        line = unicode(line, 'utf-8', 'ignore')
-
-	# parse if possible
-	k, v = parse(line)
+        # to unicode, and parse if possible
+        u_line = unicode(line, 'utf-8', 'ignore')
+	k, v = parse(u_line)
 	if k:
 	    if v: # skip blank V
 		buffer_add(sid, k, v)
 	else:
-	    print 'reject:', line_no, line
+	    print 'reject:', line_no, line # <- not the unicode version
 
 # load a file, switching on suffix
 def load_file(f):
