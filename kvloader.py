@@ -13,6 +13,7 @@ import sys
 # performance
 DB = 'tmp.db'
 PAGESIZE = 1024 * 64 # number of records-per-import
+UTF8 = 'utf-8'
 
 # initialise database references
 connection = None
@@ -195,7 +196,7 @@ def load_input(sid, input):
 	line = line.rstrip('\r\n')
 
         # to unicode, and parse if possible
-        u_line = unicode(line, 'utf-8', 'ignore')
+        u_line = unicode(line, UTF8, 'ignore')
 	k, v = parse(u_line)
 	if k:
 	    if v: # skip blank V
@@ -258,6 +259,7 @@ def lookup_run(what, with_source=False):
     )
     w = csv.writer(sys.stdout)
     for row in cursor.execute(sql):
+        row = [s.encode(UTF8) for s in row]
 	w.writerow(row)
 
 # ---- END LIBRARIES ----
@@ -393,7 +395,7 @@ def usage(what = None):
 
 # init
 connection = sqlite3.connect(DB)
-connection.text_factory = lambda x: unicode(x, 'utf-8', 'ignore') # ignore bad unicode shit
+connection.text_factory = lambda x: unicode(x, UTF8, 'ignore') # ignore bad unicode shit
 cursor = connection.cursor()
 cursor.executescript(BOOTSTRAP)
 
