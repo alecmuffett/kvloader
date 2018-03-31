@@ -262,6 +262,20 @@ def lookup_run(what, with_source=False):
         row = [s.encode(UTF8) for s in row]
 	w.writerow(row)
 
+def like_run(what, like):
+    sql = """
+    SELECT DISTINCT %s
+    FROM mappings m
+    WHERE m.%s LIKE '%s';
+    """ % (
+	what, what, like
+    )
+
+    w = csv.writer(sys.stdout)
+    for row in cursor.execute(sql):
+        row = [s.encode(UTF8) for s in row]
+	w.writerow(row)
+
 # ---- END LIBRARIES ----
 
 testvec = (
@@ -307,11 +321,19 @@ def do_key(cargs):
 	lookup_add(word.strip().lower())
     lookup_run('key')
 
+def do_key_like(cargs):
+    for pattern in cargs:
+        like_run('key', pattern)
+
 def do_val(cargs):
     lookup_init()
     for word in cargs:
 	lookup_add(word)
     lookup_run('val')
+
+def do_val_like(cargs):
+    for pattern in cargs:
+        like_run('val', pattern)
 
 def do_key_file(cargs):
     lookup_init()
@@ -368,8 +390,10 @@ options = {
 
     'key': ('[key ...]', 'lookup records for key(s)', do_key),
     'key-file': ('[file ...]', 'lookup records for keys cited in file', do_key_file),
+    'key-like': ('[sqlpat ...]', 'lookup records for key(s) matching', do_key_like),
     'val': ('[val ...]', 'lookup records for value(s)', do_val),
     'val-file': ('[file ...]', 'lookup records for vals cited in file', do_val_file),
+    'val-like': ('[sqlpat ...]', 'lookup records for val(s) matching', do_val_like),
     'test': ('', 'run test vector', do_test),
     'load': ('[file ...]', 'load sources', do_load),
     'index-key': ('', 'index the keys (SLOW, EATS DISK SPACE)', do_index_key),
